@@ -55,10 +55,10 @@ return [
     'MYSQL' => [
         'host'          => '127.0.0.1',
         'port'          => '3306',
-        'user'          => 'donghua',
+        'user'          => 'root',
         'timeout'       => '5',
         'charset'       => 'utf8mb4',
-        'password'      => 'Admin123',
+        'password'      => 'b$mjd+U-[$nS]sQ5.?5`',
         'database'      => 'donghua',
         'POOL_MAX_NUM'  => '20',
         'POOL_TIME_OUT' => '0.1',
