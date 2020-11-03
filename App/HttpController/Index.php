@@ -267,7 +267,7 @@ class Index extends Controller
     //
     function HisExec()
     {
-        $url = 'http://111.205.6.240/imedical/web/csp/BSP.MSG.SRV.HTTPInterface.cls';
+        $url = 'http://218.78.86.105:20080/imedical/web/csp/BSP.MSG.SRV.HTTPInterface.cls';
         $request = $this->request();
 
         $data = $request->getRequestParam();
