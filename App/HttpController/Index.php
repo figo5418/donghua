@@ -21,14 +21,14 @@ class Index extends Controller
 {
     function index()
     {
-        echo 'tests';
         $request = $this->request();
 
         $data = $request->getRequestParam();
         $instance = \EasySwoole\EasySwoole\Config::getInstance();
+
         $config = new \EasySwoole\Mysqli\Config($instance->getConf('MYSQL'));
         $client = new \EasySwoole\Mysqli\Client($config);
-
+var_dump($client);
         $exec_log['content'] = json_encode($data);
         $client->queryBuilder()->insert('exec_log', $exec_log);
         $client->execBuilder();
