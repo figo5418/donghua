@@ -21,6 +21,7 @@ class Index extends Controller
 {
     function index()
     {
+        echo 'tests';
         $request = $this->request();
 
         $data = $request->getRequestParam();
