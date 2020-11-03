@@ -1,0 +1,221 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</head>
+<body>
+<div>
+    <div>
+        <p>东华测试页面</p>
+        <ul id="line">
+        </ul>
+    </div>
+    <div>
+        <select id="device">
+
+        </select>
+        <button id="login_button" onclick="login()">登陆</button>
+    </div>
+    <div>
+
+        接收者:<select id="action">
+
+    </select>
+
+        消息类型<select id="type">
+        <option value="1">危险消息</option>
+        <option value="2">审批消息</option>
+        <option value="3">普通消息</option>
+
+    </select>
+        <input type="text" id="says">
+        <button id="send" onclick="say()">发送</button>
+    </div>
+</div>
+</body>
+<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+
+        //回车发送
+        var path =  'ws://120.77.203.75:9501';
+        var websocket;
+        createWebSocket();
+
+        /**
+         * websocket启动
+         */
+        function createWebSocket() {
+            try {
+                if ('WebSocket' in window) {
+                    websocket = new WebSocket((path));
+
+                }
+                init();
+            } catch (e) {
+                reconnect();
+            }
+
+        }
+
+
+
+
+        function init(asd) {
+
+            //连接成功建立的回调方法
+            websocket.onopen = function (event) {
+
+                addLine("已成功连接websocket");
+                //心跳检测重置
+                heartCheck.reset().start();
+            };
+
+
+
+            websocket.onmessage = function (event) {
+                if (event.data != 'pong') {
+                    var jsobject = JSON.parse(evt.data);//转化
+                    var data = jsobject.data;
+                    switch (jsobject.type) {
+                        case 'init':
+                            addLine("初始化设备列表成功");
+                            var html = '';
+                            var html2 = "<option value=''>广播消息</option>";
+                            for (var i = 0; i < data.length; i++) {
+                                html += "<option value=" + data[i].uuid + ">" + data[i].uuid + "</option>";
+                                html2 += "<option value=" + data[i].uuid + ">" + data[i].uuid + "</option>";
+                            }
+                            $("#device").html(html);
+
+                            $("#action").html(html2);
+
+                            break;
+
+                        case 'login_success':
+                            $("#device").attr("disabled", true);
+                            $("#login_button").attr("disabled", true);
+
+
+                            addLine(data);
+                            break;
+                        case "message":
+                            addLine("收到新消息:" + JSON.stringify(data));
+                            break;
+                    }
+                } else {
+                    heartCheck.reset().start();
+
+                }
+            };
+
+            //连接发生错误的回调方法
+            websocket.onerror = function (event) {
+                console.log("WebSocket:发生错误");
+                reconnect();
+            };
+
+            //连接关闭的回调方法
+            websocket.onclose = function (event) {
+                console.log("WebSocket:已关闭");
+                heartCheck.reset();//心跳检测
+                reconnect();
+            };
+
+            //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+            window.onbeforeunload = function () {
+                websocket.close();
+            };
+
+
+            //关闭连接
+            function closeWebSocket() {
+                websocket.close();
+            }
+
+            //发送消息
+            function send(message) {
+                websocket.send(message);
+            }
+        }
+
+        //避免重复连接
+        var lockReconnect = false, tt;
+
+        /**
+         * websocket重连
+         */
+        function reconnect() {
+            if (lockReconnect) {
+                return;
+            }
+            lockReconnect = true;
+            tt && clearTimeout(tt);
+            tt = setTimeout(function () {
+                console.log('重连中...');
+                lockReconnect = false;
+                createWebSocket();
+            }, 4000);
+        }
+
+        /**
+         * websncket心跳检测
+         */
+        var heartCheck = {
+            timeout: 5000,
+            timeoutObj: null,
+            serverTimeoutObj: null,
+            reset: function () {
+                clearTimeout(this.timeoutObj);
+                clearTimeout(this.serverTimeoutObj);
+                return this;
+            },
+            start: function () {
+                var self = this;
+                this.timeoutObj && clearTimeout(this.timeoutObj);
+                this.serverTimeoutObj && clearTimeout(this.serverTimeoutObj);
+                this.timeoutObj = setTimeout(function () {
+                    //这里发送一个心跳，后端收到后，返回一个心跳消息，
+                    //onmessage拿到返回的心跳就说明连接正常
+                    var obj = {"action": "ping"}
+                    websocket.send(JSON.stringify(obj));
+
+                    self.serverTimeoutObj = setTimeout(function () { // 如果超过一定时间还没重置，说明后端主动断开了
+                        console.log('关闭服务');
+                        websocket.close();//如果onclose会执行reconnect，我们执行 websocket.close()就行了.如果直接执行 reconnect 会触发onclose导致重连两次
+                    }, self.timeout)
+                }, this.timeout)
+            }
+        }
+
+        function addLine(data) {
+            $("#line").append("<li>" + data + "</li>");
+        }
+
+        function login() {
+            var action = $("#device").val();
+            websocket.send(JSON.stringify({
+                action: "login",
+                content: {"uuid": action}
+            }));
+        }
+
+        function say() {
+            var content = $("#says").val();
+            var action = $("#action").val();
+            var sender = $("#device").val();
+            var type = $("#type").val();
+
+            var result = {"sender": sender, "receiver": action, "message": content,"type":type};
+            $("#says").val('');
+
+            websocket.send(JSON.stringify({
+                action: "send_message",
+                content: result
+            }));
+            addLine("发送消息:" + content);
+
+        }
+
+    });
+</script>
+</html>

@@ -1,0 +1,118 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</head>
+<body>
+<div>
+    <div>
+        <p>东华测试页面</p>
+        <ul id="line">
+        </ul>
+    </div>
+    <div>
+        <select id="device">
+
+        </select>
+        <button id="login_button" onclick="login()">登陆</button>
+    </div>
+    <div>
+
+        接收者:<select id="action">
+
+    </select>
+
+        消息类型<select id="type">
+        <option value="1">危险消息</option>
+        <option value="2">审批消息</option>
+        <option value="3">普通消息</option>
+
+    </select>
+        <input type="text" id="says">
+        <button id="send" onclick="say()">发送</button>
+    </div>
+</div>
+</body>
+<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+<script>
+    var wsServer = 'ws://120.77.203.75:9501';
+    var websocket = new WebSocket(wsServer);
+    window.onload = function () {
+        websocket.onopen = function (evt) {
+            websocket.send(JSON.stringify({
+                action: 'init',
+                content: ''
+            }));
+            addLine("已成功连接websocket");
+        };
+        websocket.onclose = function (evt) {
+            $("#device").attr("disabled", true);
+            $("#login_button").attr("disabled", true);
+            $("#says").attr("disabled", true);
+            $("#send").attr("disabled",true);
+            addLine("websocket连接已断开!请刷新页面后重试");
+        };
+        websocket.onmessage = function (evt) {
+            var jsobject = JSON.parse(evt.data);//转化
+            var data = jsobject.data;
+            switch (jsobject.type) {
+                case 'init':
+                    addLine("初始化设备列表成功");
+                    var html = '';
+                    var html2 = "<option value=''>广播消息</option>";
+                    for (var i = 0; i < data.length; i++) {
+                        html += "<option value=" + data[i].uuid + ">" + data[i].uuid + "</option>";
+                        html2 += "<option value=" + data[i].uuid + ">" + data[i].uuid + "</option>";
+                    }
+                    $("#device").html(html);
+
+                    $("#action").html(html2);
+
+                    break;
+
+                case 'login_success':
+                    $("#device").attr("disabled", true);
+                    $("#login_button").attr("disabled", true);
+
+
+                    addLine(data);
+                    break;
+                case "message":
+                    addLine("收到新消息:" + JSON.stringify(data));
+                    break;
+            }
+        };
+        websocket.onerror = function (evt, e) {
+            addLine('Error occured: ' + evt.data);
+        };
+    };
+
+    function addLine(data) {
+        $("#line").append("<li>" + data + "</li>");
+    }
+
+    function login() {
+        var action = $("#device").val();
+        websocket.send(JSON.stringify({
+            action: "login",
+            content: {"uuid": action}
+        }));
+    }
+
+    function say() {
+        var content = $("#says").val();
+        var action = $("#action").val();
+        var sender = $("#device").val();
+        var type = $("#type").val();
+
+        var result = {"sender": sender, "receiver": action, "message": content,"type":type};
+        $("#says").val('');
+
+        websocket.send(JSON.stringify({
+            action: "send_message",
+            content: result
+        }));
+        addLine("发送消息:" + content);
+
+    }
+</script>
+</html>

@@ -1,0 +1,24 @@
+{
+    "name": "easyswoole/demo",
+    "authors": [
+        {
+            "name": "如果的如果",
+            "email": "291323003@qq.com"
+        }
+    ],
+    "require": {
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "easyswoole/easyswoole": "3.3",
+        "easyswoole/socket": "^1.0",
+        "easyswoole/task": "^1.0"
+    },
+    "require-dev": {
+        "easyswoole/swoole-ide-helper": "^1.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "App/"
+        }
+    }
+}
